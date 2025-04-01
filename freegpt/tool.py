@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field
 
-
 class PostTweet(BaseModel):
     """
     Use this tool to post a new tweet to your audience

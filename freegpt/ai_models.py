@@ -172,7 +172,22 @@ class AIModels:
                 })
 
 
-async def run_tests():
+async def run_llm_call():
+
+    ai_models = AIModels()
+
+    response = await ai_models.call_llm(
+        system_prompt="You are a helpful assistant.",
+        user_prompt="Whats your name",
+        model='azure/gpt-4o-mini',
+        temperature=0,
+        max_tokens=1500,
+        timeout=60,
+    )
+
+    print(response)
+
+async def run_tool_call():
 
     ai_models = AIModels()
 
@@ -192,4 +207,4 @@ if __name__ == '__main__':
 
     import asyncio
 
-    asyncio.run(run_tests())
+    asyncio.run(run_llm_call())

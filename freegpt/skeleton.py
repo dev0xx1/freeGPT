@@ -47,3 +47,5 @@ class Logger:
     - Standardize the logging interface.
     - Send logs to telegram channel
     """
+
+
