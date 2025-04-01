@@ -26,7 +26,7 @@ I personally got tired of seeing halfassed demos work for 30 minutes before brea
 
 # Inspirations
 
-This framework is the result of working and learning from building dozens of agentic apps over the last couple of years. Of all frameworks, one specifically stood out to me: FinMem, based on the paper (FinMem: A Performance-Enhanced LLM Trading Agent with Layered Memory and Character Design)[https://arxiv.org/abs/2311.13743]
+This framework is the result of working and learning from building dozens of agentic apps over the last couple of years. Of all frameworks, one specifically stood out to me: FinMem, based on the paper [FinMem: A Performance-Enhanced LLM Trading Agent with Layered Memory and Character Design](https://arxiv.org/abs/2311.13743)
 
 I've used langchain, llama-index, played with Virtual Protocol's Game. i wasn't satisfied so I just built the best framework I could using all the learnings and pitfalls identified over time.
 
