@@ -1,8 +1,8 @@
 from typing import List
 
-from freegpt.brain import Brain
-from freegpt.environment import Environment
-from freegpt.llms.base import call_tools
+from archive.freegpt.brain import Brain
+from archive.freegpt.environment import Environment
+from archive.freegpt.llms.base import call_tools
 
 
 class FreeGPT:

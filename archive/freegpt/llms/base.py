@@ -1,17 +1,15 @@
 import json
 from json import JSONDecodeError
-from typing import Type, List, Union, Optional
 
 import httpx
 import litellm
 from langfuse.decorators import observe, langfuse_context
 from litellm import acompletion, Timeout, APIConnectionError, RateLimitError
-from pydantic import BaseModel, field_validator, Field
 from pydantic_core import ValidationError
-from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type, wait_exponential
+from tenacity import retry, stop_after_attempt, retry_if_exception_type, wait_exponential
 from  litellm.llms.vertex_ai.common_utils import VertexAIError
 
-from freegpt.llms.helpers import convert_pydantic_to_openai_function
+from archive.freegpt.llms.helpers import convert_pydantic_to_openai_function
 
 
 @observe(as_type='generation')

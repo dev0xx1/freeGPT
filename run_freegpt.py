@@ -1,11 +1,11 @@
 import asyncio
-import time
 
-from freegpt.brain import Brain
-from freegpt.constants import langfuse_client
+from data_samples.zerohedge_article import zerohedge_sample_article
+from archive.freegpt import Brain
+from archive.freegpt import langfuse_client
 
-from freegpt.environment import Environment
-from freegpt.freegpt import FreeGPT
+from archive.freegpt import Environment
+from archive.freegpt import FreeGPT
 
 reflections_task = ''
 
@@ -13,8 +13,7 @@ reflections_task = ''
 class CustomEnvironment(Environment):
 
     async def fetch_context(self):
-        # Add news fetching here
-        return {}
+        return zerohedge_sample_article
 
 
 environment = CustomEnvironment(

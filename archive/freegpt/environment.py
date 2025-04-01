@@ -3,7 +3,7 @@ from typing import List
 
 from pydantic import BaseModel, Field
 
-from freegpt.llms.base import call_llm
+from archive.freegpt.llms.base import call_llm
 
 
 # STATE
