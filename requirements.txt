@@ -1,0 +1,14 @@
+sqlalchemy
+psycopg2-binary
+pandas
+tenacity
+numpy
+langfuse
+tweepy
+asyncpg
+litellm
+python-telegram-bot
+feedparser
+lxml_html_clean
+timeago
+bs4

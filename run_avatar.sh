@@ -1,0 +1,1 @@
+/home/dev0xx/Documents/venvs/freeGPT/bin/python /home/dev0xx/Documents/repos/freeGPT/stream_avatar.py
