@@ -9,7 +9,7 @@ region: lon
 workers:
 - dockerfile_path: ./Dockerfile
   github:
-    branch: prod
+    branch: main
     deploy_on_push: true
     repo: dev0xx1/freegpt
   instance_count: 1

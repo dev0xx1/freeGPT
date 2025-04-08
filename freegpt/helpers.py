@@ -1,3 +1,4 @@
+import asyncio
 import re
 from datetime import datetime
 import feedparser
@@ -47,6 +48,7 @@ def remove_emojis(text):
 
     return emoji_pattern.sub(r'', text)
 
+
 def process_post(content):
     content = content.replace("🚀", "")
     # Remove all links
@@ -58,6 +60,7 @@ def process_post(content):
     # Remove emojis
     cleaned_text = remove_emojis(cleaned_text)
     return cleaned_text
+
 
 @retry(
     reraise=True,
@@ -77,8 +80,45 @@ async def send_telegram_message(telegram_bot, chat_id, message):
     stop=stop_after_attempt(10),
     wait=wait_exponential(multiplier=1, min=4, max=10),
 )
-def send_tweet(twitter_client, message):
+async def send_tweet(twitter_client, message):
     return twitter_client.create_tweet(
         text=message,
     )
 
+
+@retry(
+    reraise=True,
+    stop=stop_after_attempt(10),
+    wait=wait_exponential(multiplier=1, min=4, max=10),
+)
+async def send_cast(warpcast_client, content):
+    # Send a cast
+    response = await warpcast_client.post_cast(content)
+    return response
+
+
+async def broadcast_post(
+        content,
+        twitter_client=None,
+        warpcast_client=None,
+        telegram_bot=None,
+        telegram_chat_id=None,
+):
+    # Create async tasks for each social media platform if clients are provided
+    tasks = []
+    client_names = []
+    if twitter_client:
+        tasks.append(send_tweet(twitter_client, content))
+        client_names.append('twitter')
+    if warpcast_client:
+        tasks.append(send_cast(warpcast_client, content))
+        client_names.append('warpcast')
+    if telegram_bot:
+        tasks.append(send_telegram_message(telegram_bot, telegram_chat_id, content))
+        client_names.append('telegram')
+
+    # Wait for all tasks to complete
+    results = await asyncio.gather(*tasks)
+
+    # Return the results of the tasks in a dictionary with the client name as the key
+    return {client: result for client, result in zip(client_names, results)}

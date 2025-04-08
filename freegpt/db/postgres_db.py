@@ -15,8 +15,8 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
 
-DB_RETRIES = os.environ.get('DB_RETRIES', 0)
-WAIT_SEC = os.environ.get('WAIT_SEC', 0)
+DB_RETRIES = int(os.environ.get('DB_RETRIES', 0))
+WAIT_SEC = int(os.environ.get('WAIT_SEC', 0))
 
 exceptions = (socket.gaierror, OperationalError, TimeoutError, DisconnectionError, DatabaseError, DBAPIError, Psycopg2OperationalError)
 

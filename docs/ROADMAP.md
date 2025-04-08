@@ -1,12 +1,14 @@
 
-# v0
+# v0 - mvp
 
-Quick and dirty autonomous agent on X. 
+Quick and dirty autonomous agent on X
 - Real-time knowledge
 - Single script / no framework
 - Basic while True with throttling
 - Logger
-- Database+observability
+- Database
+- Observability
+- X + Warpcast integration
 
 # v1 - meme agent framework
 

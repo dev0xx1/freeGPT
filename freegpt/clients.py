@@ -1,7 +1,7 @@
+import os
+from farcaster import Warpcast
 from langfuse import Langfuse
 import tweepy
-import os
-
 from telegram import Bot
 
 from freegpt.db.postgres_db import PostgresDB
@@ -29,3 +29,6 @@ postgres_db = PostgresDB(
 )
 
 freegpt_telegram_bot = Bot(token=os.environ['TELEGRAM_BOT_TOKEN_FREEGPT'])
+
+warpcast_client = Warpcast(mnemonic=os.environ['FARCASTER_MNEMONIC'])
+warpcast_client.get_healthcheck()
