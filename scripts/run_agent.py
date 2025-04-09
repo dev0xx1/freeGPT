@@ -4,6 +4,7 @@ import datetime as dt
 import asyncio
 import os
 
+import tweepy
 from telegram.constants import ParseMode
 
 from freegpt.agent.generate_post import  generate_viral_meme
@@ -20,8 +21,6 @@ async def main():
     postgres_db.connect()
 
     while True:
-
-
 
         recent_post = await postgres_db.async_read("""
             SELECT EXISTS (
@@ -74,15 +73,21 @@ async def main():
 
         platform_responses = []
 
-        if 'twitter' in channels:
-            twitter_obj = await send_tweet(twitter_official_client, post_content)
-            twitter_obj = twitter_obj.data
-            platform_responses.append({
-                'platform': 'twitter',
-                'response': twitter_obj,
-            })
+        if 'x' in channels:
+            logger.log("Posting to X...")
+            try:
+                twitter_obj = await send_tweet(twitter_official_client, post_content)
+                twitter_obj = twitter_obj.data
+                platform_responses.append({
+                    'platform': 'twitter',
+                    'response': twitter_obj,
+                })
+            except tweepy.errors.TooManyRequests:
+                logger.log("Twitter rate limit exceeded, skipping...")
+                pass
 
-        if 'warpcast' in channels:
+        if 'farcaster' in channels:
+            logger.log("Posting to Farcaster...")
             warpcast_obj = await send_cast(warpcast_client, post_content)
             warpcast_obj = warpcast_obj.model_dump()
             platform_responses.append({
@@ -91,6 +96,7 @@ async def main():
             })
 
         if 'telegram' in channels:
+            logger.log("Posting to Telegram...")
             telegram_msg = await send_telegram_message(
                 chat_id=os.environ['TELEGRAM_CHAT_ID_FREEGPT'],
                 text=post_content,
