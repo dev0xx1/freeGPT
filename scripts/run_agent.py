@@ -22,6 +22,12 @@ async def main():
 
     while True:
 
+        if int(os.environ.get('IS_ON', 0)) == 0:
+            logger.log("Agent is OFF, Sleeping...")
+            await asyncio.sleep(60 * 5)
+            continue
+
+
         recent_post = await postgres_db.async_read("""
             SELECT EXISTS (
                 SELECT 1
