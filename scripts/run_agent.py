@@ -4,22 +4,17 @@ import datetime as dt
 import asyncio
 import os
 
-from langfuse.decorators import observe
+import tweepy
+from sqlalchemy import text
 from telegram.constants import ParseMode
 
 from freegpt.agent.generate_post import generate_post
-from freegpt.clients import postgres_db, freegpt_telegram_bot, twitter_official_client, warpcast_client
-from freegpt.helpers import fetch_rss_feed, process_post, send_tweet, send_telegram_message, send_cast
+from freegpt.clients import postgres_db, twitter_official_client, warpcast_client
+from freegpt.helpers import fetch_rss_feed, process_post, send_telegram_message, broadcast_post, send_tweet, send_cast, \
+    insert_post_in_db
 from freegpt.logger import Logger
 
-#TODO - Prompt engineering to avoid repeating itself
-#TODO - Fix 280 characters limit
-#TODO - Remove mentions of crypto
-#TODO - Add network channel columns to DDL
-#TODO - Implement broadcasting and msg response saving
 
-
-@observe(as_type='span', name='freegpt_agent')
 async def main():
 
     logger = Logger(__name__)
@@ -29,21 +24,21 @@ async def main():
     past_posts = await postgres_db.async_read("""
     select created_at, content, source_url from agent_posts 
     where created_at > NOW() - INTERVAL '24 hours'
-    order by created_at desc
+    order by created_at asc
     """)
 
     while True:
 
-        # UPDATE CONTEXT
-        # Post history
-
+        # CHECK THROTTLING
         if os.environ.get('ENV', 'dev') == 'dev':
             # No twitter throttling in dev mode
+            logger.log("No throttling in dev mode")
             pass
         else:
             # Check twitter throttling
-            if not past_posts or (past_posts and dt.datetime.now(pytz.UTC) - past_posts[0]['created_at'] > dt.timedelta(minutes=15)):
-                logger.log("Ok to post")
+            if not past_posts or (
+                    past_posts and dt.datetime.now(pytz.UTC) - past_posts[-1]['created_at'] > dt.timedelta(minutes=85)):
+                logger.log("Time to post")
                 pass
             else:
                 # If the last post was less than 85 minutes ago, we can't post
@@ -51,8 +46,8 @@ async def main():
                 await asyncio.sleep(60)
                 continue
 
+
         # Invert the order of the posts
-        past_posts = past_posts[::-1]
         formatted_posts = []
         for post in past_posts:
             formatted_timeago = timeago.format(post['created_at'], dt.datetime.now(pytz.UTC))
@@ -77,9 +72,10 @@ async def main():
 
         llm_response = await generate_post(user_prompt)
         post_content = llm_response.processed.split('<post>')[1].split('</post>')[0].strip()
-
         post_content = process_post(post_content)
+        logger.log(f"Posting: \n\n{post_content}\n\n----------")
 
+        # Send to social media
         if os.environ.get('ENV', 'dev') == 'dev':
             # post to social media
             telegram_msg = await send_telegram_message(
@@ -87,48 +83,50 @@ async def main():
                 text=post_content,
                 parse_mode=ParseMode.HTML,
             )
-            raw_obj = telegram_msg.to_dict()
-        else:
-            # post to social media
-            logger.log(f"Posting to X : \n\n{post_content}\n\n----------")
 
-            # Send to Twitter/X
-            tweet = await send_tweet(
-                twitter_client=twitter_official_client,
-                message=post_content,
+        else:
+            # PRODUCTION
+            # Twitter
+            try:
+                twitter_obj = await send_tweet(twitter_official_client, post_content)
+                twitter_obj = twitter_obj.data
+            except tweepy.errors.TooManyRequests:
+                logger.log("Twitter rate limit exceeded. Skipping Twitter post.")
+                continue
+
+            # Warpcast
+            warpcast_obj = await send_cast(warpcast_client, post_content)
+            warpcast_obj = warpcast_obj.model_dump()
+            new_post_obj = {
+                'content': post_content,
+                'source_url': unused_news[0]['url'] if unused_news else None,
+                'trace_url': llm_response.trace_url,
+                'warpcast_response': warpcast_obj,
+                'twitter_response': twitter_obj,
+                'created_at': dt.datetime.now(pytz.UTC),
+            }
+
+            # save to db
+            platform_responses = [
+                {
+                    'platform': 'twitter',
+                    'response': twitter_obj,
+                },
+                {
+                    'platform': 'warpcast',
+                    'response': warpcast_obj,
+                }
+            ]
+            await insert_post_in_db(
+                platform_responses=platform_responses,
+                content=post_content,
+                source_url=unused_news[0]['url'] if unused_news else None,
+                trace_url=llm_response.trace_url,
             )
 
-            # Send to Warpcast
-            #cast = await send_cast(
-            #    warpcast_client=warpcast_client,
-            #    content=post_content,
-            #)
 
-            # Share on Telegram to start a Raid
-
-
-            raw_obj = tweet.data
-
-        # save to db
-
-        new_post_obj = {
-            'content': post_content,
-            'channel_object_raw': raw_obj,
-            'source_url': unused_news[0]['url'] if unused_news else None,
-            'trace_url':llm_response.trace_url,
-        }
-
-        await postgres_db.async_insert(
-            table_name='agent_posts',
-            rows=[
-                new_post_obj
-            ]
-        )
-
-        # Append the new post to the list of past posts
-        new_post_obj['created_at'] = dt.datetime.now(pytz.UTC)
-        past_posts.insert(0, new_post_obj)
-
+            # Append the new post to the list of past posts
+            past_posts.insert(0, new_post_obj)
 
 
 if __name__ == "__main__":

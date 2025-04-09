@@ -1,10 +1,32 @@
 import asyncio
 import re
-from datetime import datetime
 import feedparser
+import tweepy
 from bs4 import BeautifulSoup
 from telegram.constants import ParseMode
-from tenacity import stop_after_attempt, wait_fixed, retry, wait_exponential
+from tenacity import stop_after_attempt, wait_fixed, retry, wait_exponential, retry_if_exception, \
+    retry_if_exception_type
+import json
+import os
+import socket
+from datetime import datetime
+from sqlalchemy import create_engine, text, select
+from sqlalchemy.exc import OperationalError, TimeoutError, DisconnectionError, DatabaseError, DBAPIError
+from psycopg2 import OperationalError as Psycopg2OperationalError
+from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
+# get machine user name
+import getpass
+
+from freegpt.clients import postgres_db
+
+
+username = getpass.getuser()
+DB_RETRIES = int(os.environ.get('DB_RETRIES', 0))
+WAIT_SEC = int(os.environ.get('WAIT_SEC', 0))
+
+RETRIES = 0 if 'dev0xx' == username else 10
+exceptions = (socket.gaierror, OperationalError, TimeoutError, DisconnectionError, DatabaseError, DBAPIError,
+              Psycopg2OperationalError)
 
 
 def fetch_rss_feed():
@@ -59,12 +81,14 @@ def process_post(content):
     cleaned_text = re.sub(r'\bJoin the[^\n.?!]*[.?!]?\s*', '', content)
     # Remove emojis
     cleaned_text = remove_emojis(cleaned_text)
+
+    cleaned_text = cleaned_text.strip()
     return cleaned_text
 
 
 @retry(
     reraise=True,
-    stop=stop_after_attempt(10),
+    stop=stop_after_attempt(RETRIES),
     wait=wait_exponential(multiplier=1, min=4, max=10),
 )
 async def send_telegram_message(telegram_bot, chat_id, message):
@@ -75,10 +99,16 @@ async def send_telegram_message(telegram_bot, chat_id, message):
     )
 
 
+def is_retryable_exception(exception):
+    # Return False if it's a TooManyRequests exception, True otherwise
+    return not isinstance(exception, tweepy.errors.TooManyRequests)
+
+
 @retry(
     reraise=True,
-    stop=stop_after_attempt(10),
+    stop=stop_after_attempt(RETRIES),
     wait=wait_exponential(multiplier=1, min=4, max=10),
+    retry=retry_if_exception(is_retryable_exception),
 )
 async def send_tweet(twitter_client, message):
     return twitter_client.create_tweet(
@@ -88,12 +118,12 @@ async def send_tweet(twitter_client, message):
 
 @retry(
     reraise=True,
-    stop=stop_after_attempt(10),
+    stop=stop_after_attempt(RETRIES),
     wait=wait_exponential(multiplier=1, min=4, max=10),
 )
 async def send_cast(warpcast_client, content):
     # Send a cast
-    response = await warpcast_client.post_cast(content)
+    response = warpcast_client.post_cast(content)
     return response
 
 
@@ -122,3 +152,41 @@ async def broadcast_post(
 
     # Return the results of the tasks in a dictionary with the client name as the key
     return {client: result for client, result in zip(client_names, results)}
+
+
+@retry(
+    reraise=True,
+    stop=stop_after_attempt(DB_RETRIES),
+    wait=wait_fixed(WAIT_SEC),
+    retry=retry_if_exception_type(exceptions)
+)
+async def insert_post_in_db(content,
+                            source_url,
+                            trace_url,
+                            platform_responses=[]):
+    async with postgres_db.async_session_scope() as session:
+        result = await session.execute(
+            text("""
+            INSERT INTO agent_posts (content, source_url, trace_url)
+            VALUES (:content, :source_url, :trace_url)
+            RETURNING id;
+            """),
+            {"content": content,
+             "source_url": source_url,
+             "trace_url": trace_url}
+        )
+        agent_post_id = result.scalar_one()
+
+        # Step 2: Insert each platform response
+        for response in platform_responses:
+            await session.execute(
+                text("""
+                INSERT INTO social_media_posts (agent_post_id, response, platform)
+                VALUES (:agent_post_id, :response, :platform);
+                """),
+                {
+                    "agent_post_id": agent_post_id,
+                    "platform": response["platform"],
+                    "response": json.dumps(response['response']),
+                }
+            )

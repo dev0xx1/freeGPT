@@ -18,7 +18,6 @@ class AIModelResponse(BaseModel):
     trace_url: str
 
 
-@observe(as_type='generation')
 @retry(
     reraise=True,
     stop=stop_after_attempt(10),
@@ -28,6 +27,7 @@ class AIModelResponse(BaseModel):
          APIConnectionError, JSONDecodeError, ValidationError, Timeout, httpx.ReadTimeout, VertexAIError,
          RateLimitError))
 )
+@observe(as_type='span', name='llm_completion')
 async def llm_completion(
         system_prompt,
         user_prompt,
@@ -37,14 +37,10 @@ async def llm_completion(
         response_model=None,
         max_tokens=1500,
         timeout=60,
-        observation_name='llm_call',
+        observation_name='llm_completion',
 ) -> AIModelResponse:
     langfuse_context.update_current_observation(
         name=observation_name,
-        model=model,
-        model_parameters={
-            'temperature': temperature,
-        },
     )
     # Format messages
     messages = [
@@ -58,14 +54,29 @@ async def llm_completion(
                    }
                ]
 
-    completion = await acompletion(
+    @observe(as_type='generation', name='freegpt_post')
+    async def run_completion(messages,
+                             model,
+                             temperature,
+                             max_tokens,
+                             timeout):
+        completion = await acompletion(
+            messages=messages,
+            model=model,
+            temperature=temperature,
+            top_p=1,
+            max_tokens=max_tokens,
+            timeout=timeout,
+            response_format=response_model or None,
+        )
+        return completion
+
+    completion = await run_completion(
         messages=messages,
         model=model,
         temperature=temperature,
-        top_p=1,
         max_tokens=max_tokens,
-        timeout=timeout,
-        response_format=response_model or None,
+        timeout=timeout
     )
 
     llm_output_content = completion.choices[0].message.content
@@ -77,6 +88,3 @@ async def llm_completion(
         processed=llm_output_content,
         trace_url=langfuse_context.get_current_trace_url()
     )
-
-
-

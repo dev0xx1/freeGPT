@@ -1,6 +1,6 @@
 #### Deploy to DO
 ```
-doctl apps create --spec /home/dev0xx/Documents/repos/freeGPT/do-config.yaml
+doctl apps create --spec /home/dev0xx/Documents/repos/dev0xx/freeGPT/do-config.yaml
 ```
 
 #### Run docker container

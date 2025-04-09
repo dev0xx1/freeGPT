@@ -4,7 +4,7 @@ alerts:
 features:
 - buildpack-stack=ubuntu-22
 ingress: {}
-name: worker-freegpt-agent
+name: worker-freegpt
 region: lon
 workers:
 - dockerfile_path: ./Dockerfile
