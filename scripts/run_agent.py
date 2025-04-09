@@ -8,7 +8,7 @@ import tweepy
 from sqlalchemy import text
 from telegram.constants import ParseMode
 
-from freegpt.agent.generate_post import generate_post
+from freegpt.agent.generate_post import generate_post, generate_viral_meme
 from freegpt.clients import postgres_db, twitter_official_client, warpcast_client
 from freegpt.helpers import fetch_rss_feed, process_post, send_telegram_message, broadcast_post, send_tweet, send_cast, \
     insert_post_in_db
@@ -70,9 +70,7 @@ async def main():
 </LATEST_NEWS>
 """
 
-        llm_response = await generate_post(user_prompt)
-        post_content = llm_response.processed.split('<post>')[1].split('</post>')[0].strip()
-        post_content = process_post(post_content)
+        post_content = await generate_viral_meme(user_prompt)
         logger.log(f"Posting: \n\n{post_content}\n\n----------")
 
         # Send to social media
@@ -86,6 +84,7 @@ async def main():
 
         else:
             # PRODUCTION
+
             # Twitter
             try:
                 twitter_obj = await send_tweet(twitter_official_client, post_content)
