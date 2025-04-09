@@ -1,6 +1,6 @@
 import asyncio
 
-from freegpt.ai.ai_models import llm_completion
+from freegpt.agent.ai_models import llm_completion
 from freegpt.clients import langfuse_client
 from freegpt.helpers import process_post
 
@@ -35,12 +35,12 @@ async def select_best_meme(suggestions):
         user_prompt='Meme suggestion:\n' + '\n'.join(suggestions),
         task_prompt=task_prompt,
         model='xai/grok-2-latest',
-        temperature=0,
+        temperature=0.5,
     )
 
     parsed_post = llm_response.processed.split('<final_post>')[1].split('</final_post>')[0].strip()
     parsed_post = process_post(parsed_post)
-    return parsed_post
+    return parsed_post, llm_response.trace_url
 
 
 async def generate_viral_meme(context):
@@ -59,6 +59,6 @@ async def generate_viral_meme(context):
         for model in models
     ]
     suggestions = await asyncio.gather(*tasks)
-    best_meme = await select_best_meme(suggestions)
-    return best_meme
+    best_meme, trace_url = await select_best_meme(suggestions)
+    return best_meme, trace_url
 
