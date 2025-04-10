@@ -28,11 +28,12 @@ async def main():
             await asyncio.sleep(60 * 5)
             continue
 
-        recent_post = await postgres_db.async_read("""
+
+        recent_post = await postgres_db.async_read(f"""
             SELECT EXISTS (
                 SELECT 1
                 FROM agent_posts
-                WHERE created_at > now() - INTERVAL '85 minutes'
+                WHERE created_at > now() - INTERVAL '{os.environ.get('AGENT_THROTTLING', 60)} minutes'
             ) AS is_recent
         """)
 
