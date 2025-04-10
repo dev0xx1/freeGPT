@@ -1,5 +1,6 @@
 import os
 from farcaster import Warpcast
+from farcaster.models import Parent
 from langfuse import Langfuse
 import tweepy
 from telegram import Bot

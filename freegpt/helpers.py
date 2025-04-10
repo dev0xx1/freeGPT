@@ -121,9 +121,9 @@ async def send_tweet(twitter_client, message):
     stop=stop_after_attempt(RETRIES),
     wait=wait_exponential(multiplier=1, min=4, max=10),
 )
-async def send_cast(warpcast_client, content, embeds=[]):
+async def send_cast(warpcast_client, content, embeds=[],parent=None):
     # Send a cast
-    response = warpcast_client.post_cast(content,embeds)
+    response = warpcast_client.post_cast(content,embeds, parent=parent)
     return response
 
 @retry(

@@ -5,6 +5,7 @@ import asyncio
 import os
 
 import tweepy
+from farcaster.models import Parent
 from telegram.constants import ParseMode
 
 from freegpt.agent.generate_post import generate_post
@@ -101,11 +102,16 @@ async def main():
 
         if 'farcaster' in channels:
             logger.log("Posting to Farcaster...")
-            warpcast_obj = await send_cast(warpcast_client, post_content, embeds=[latest_news_article_url])
-            warpcast_obj = warpcast_obj.model_dump()
+
+            warpcast_obj = await send_cast(warpcast_client, post_content)
+            parent_r = Parent(
+                fid=int(os.environ['FID']),
+                hash=warpcast_obj.cast.hash
+            )
+            warpcast_client.post_cast(text='source: ', parent=parent_r, embeds=[latest_news_article_url])
             platform_responses.append({
                 'platform': 'warpcast',
-                'response': warpcast_obj,
+                'response': warpcast_obj.model_dump(),
             })
 
         if 'telegram' in channels:
