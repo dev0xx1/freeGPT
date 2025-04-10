@@ -33,9 +33,6 @@ freegpt_telegram_bot = Bot(token=os.environ['TELEGRAM_BOT_TOKEN_FREEGPT'])
 if 'FARCASTER_MNEMONIC' in os.environ:
     os.environ['FARCASTER_MNEMONIC'] = os.environ['FARCASTER_MNEMONIC'].replace('"', '').replace("'", "")
     warpcast_client = Warpcast(mnemonic=os.environ['FARCASTER_MNEMONIC'])
-
-
-
     warpcast_client.get_healthcheck()
 else:
     warpcast_client = None

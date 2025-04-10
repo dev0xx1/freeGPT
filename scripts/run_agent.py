@@ -7,7 +7,7 @@ import os
 import tweepy
 from telegram.constants import ParseMode
 
-from freegpt.agent.generate_post import  generate_viral_meme
+from freegpt.agent.generate_post import generate_viral_meme, generate_post
 from freegpt.clients import postgres_db, twitter_official_client, warpcast_client
 from freegpt.helpers import fetch_rss_feed, send_telegram_message, send_tweet, send_cast, \
     insert_post_in_db
@@ -71,7 +71,8 @@ async def main():
 </LATEST_NEWS>
 """
 
-        post_content, trace_url = await generate_viral_meme(meme_context)
+        post_content, trace_url = await generate_post(context=meme_context,
+                                                      model='gemini/gemini-1.5-pro')
 
         channels = os.environ['SOCIAL_CHANNELS']
         channels = [channel.strip() for channel in channels.split(',')]

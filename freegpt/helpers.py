@@ -1,4 +1,5 @@
 import asyncio
+import random
 import re
 import feedparser
 import tweepy
@@ -81,7 +82,8 @@ def process_post(content):
     cleaned_text = re.sub(r'\bJoin the[^\n.?!]*[.?!]?\s*', '', content)
     # Remove emojis
     cleaned_text = remove_emojis(cleaned_text)
-    cleaned_text = cleaned_text.encode('utf-8').decode('unicode_escape')
+    cleaned_text = cleaned_text.replace('\\n', '\n')
+    cleaned_text = cleaned_text.replace('\\\\n', '\n').replace('\\n', '\n')
     cleaned_text = cleaned_text.strip()
     return cleaned_text
 
@@ -162,3 +164,32 @@ async def insert_post_in_db(content,
             )
 
 
+def run_punchline_algorithm():
+    # Define components tailored to ZeroHedge and personality
+    setup_styles = [
+        "Financial Metaphor",  # E.g., "The Fed is like a..."
+        "Doom Question",  # E.g., "What happens when inflation..."
+        "Cynical Statement"  # E.g., "They claim the market is fine, but..."
+    ]
+
+    twist_types = [
+        "Market Crash",  # Ties to financial collapse
+        "Conspiracy Reveal",  # Hints at hidden truths
+        "Absurd Outcome",  # Exaggerates to absurdity
+        "Dark Twist"  # Adds a morbid edge
+    ]
+
+    flavors = [
+        "Meme Reference",  # E.g., "Wojaks are crying"
+        "Dark Finance",  # E.g., "Thanks to QE infinity"
+        "Existential Dread",  # E.g., "As we spiral into oblivion"
+        "Snarky Cynicism"  # E.g., "While Davos laughs"
+    ]
+
+    # Randomly select components
+    setup = random.choice(setup_styles)
+    twist = random.choice(twist_types)
+    flavor = random.choice(flavors)
+
+    # Construct the structure string
+    return f"[Setup: {setup}, Twist: {twist}, Flavor: {flavor}]"
