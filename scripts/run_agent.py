@@ -7,7 +7,7 @@ import os
 import tweepy
 from telegram.constants import ParseMode
 
-from freegpt.agent.generate_post import generate_viral_meme, generate_post
+from freegpt.agent.generate_post import generate_post
 from freegpt.clients import postgres_db, twitter_official_client, warpcast_client
 from freegpt.helpers import fetch_rss_feed, send_telegram_message, send_tweet, send_cast, \
     insert_post_in_db
@@ -59,15 +59,22 @@ async def main():
         already_used_urls = [post['source_url'] for post in past_posts]
         latest_news = fetch_rss_feed()
         unused_news = [news for news in latest_news if news['url'] not in already_used_urls]
+        if len(unused_news) == 0:
+            logger.log("No new news, sleeping...")
+            await asyncio.sleep(60 * 5)
+            continue
+
 
         # Generate a new post
+        latest_news_article_content = unused_news[0]['content']
+        latest_news_article_url = unused_news[0]['url']
         meme_context = f"""
 <PAST POSTS>
 {posts_history}
 </PAST POSTS>
 
 <LATEST_NEWS>
-{unused_news[0]['content'] if len(unused_news) > 0 else ""}
+{latest_news_article_content}
 </LATEST_NEWS>
 """
 
@@ -82,7 +89,7 @@ async def main():
         if 'x' in channels:
             logger.log("Posting to X...")
             try:
-                twitter_obj = await send_tweet(twitter_official_client, post_content)
+                twitter_obj = await send_tweet(twitter_official_client, post_content+f"\n\n{latest_news_article_url}")
                 twitter_obj = twitter_obj.data
                 platform_responses.append({
                     'platform': 'twitter',
@@ -94,7 +101,7 @@ async def main():
 
         if 'farcaster' in channels:
             logger.log("Posting to Farcaster...")
-            warpcast_obj = await send_cast(warpcast_client, post_content)
+            warpcast_obj = await send_cast(warpcast_client, post_content, embeds=[latest_news_article_url])
             warpcast_obj = warpcast_obj.model_dump()
             platform_responses.append({
                 'platform': 'warpcast',
