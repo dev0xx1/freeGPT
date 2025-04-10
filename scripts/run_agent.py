@@ -28,7 +28,6 @@ async def main():
             await asyncio.sleep(60 * 5)
             continue
 
-
         recent_post = await postgres_db.async_read(f"""
             SELECT EXISTS (
                 SELECT 1
@@ -38,7 +37,7 @@ async def main():
         """)
 
         if recent_post and recent_post[0]['is_recent']:
-            logger.log("Waiting for 5 minutes...")
+            logger.log(f"Agent is throttled, Sleeping...")
             await asyncio.sleep(60 * 5)
             continue
 
