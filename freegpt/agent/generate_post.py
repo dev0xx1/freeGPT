@@ -1,5 +1,7 @@
 import asyncio
 
+from langfuse.decorators import observe
+
 from freegpt.agent.ai_models import llm_completion
 from freegpt.clients import langfuse_client
 from freegpt.helpers import process_post
@@ -32,9 +34,9 @@ async def select_best_meme(suggestions):
 
     llm_response = await llm_completion(
         system_prompt=system_prompt,
-        user_prompt='Meme suggestion:\n' + '\n'.join(suggestions),
+        user_prompt='[Meme suggestion]:\n'.join(suggestions),
         task_prompt=task_prompt,
-        model='xai/grok-2-latest',
+        model='xai/grok-3-latest',
         temperature=0.5,
     )
 
@@ -42,7 +44,7 @@ async def select_best_meme(suggestions):
     parsed_post = process_post(parsed_post)
     return parsed_post, llm_response.trace_url
 
-
+@observe(as_type='span', name='generate_viral_meme')
 async def generate_viral_meme(context):
     models = ['gemini/gemini-1.5-pro', 'azure/gpt-4o', 'xai/grok-2-latest']
     system_prompt = langfuse_client.get_prompt('persona').compile()
@@ -61,4 +63,3 @@ async def generate_viral_meme(context):
     suggestions = await asyncio.gather(*tasks)
     best_meme, trace_url = await select_best_meme(suggestions)
     return best_meme, trace_url
-

@@ -81,7 +81,7 @@ def process_post(content):
     cleaned_text = re.sub(r'\bJoin the[^\n.?!]*[.?!]?\s*', '', content)
     # Remove emojis
     cleaned_text = remove_emojis(cleaned_text)
-
+    cleaned_text = cleaned_text.encode('utf-8').decode('unicode_escape')
     cleaned_text = cleaned_text.strip()
     return cleaned_text
 

@@ -27,7 +27,6 @@ async def main():
             await asyncio.sleep(60 * 5)
             continue
 
-
         recent_post = await postgres_db.async_read("""
             SELECT EXISTS (
                 SELECT 1

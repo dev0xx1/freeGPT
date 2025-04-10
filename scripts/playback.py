@@ -163,4 +163,4 @@ meme = asyncio.run(
     generate_viral_meme(USER)
 )
 
-print(meme)
+print(meme[0])
