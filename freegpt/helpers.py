@@ -82,9 +82,12 @@ def process_post(content):
     cleaned_text = re.sub(r'\bJoin the[^\n.?!]*[.?!]?\s*', '', content)
     # Remove emojis
     cleaned_text = remove_emojis(cleaned_text)
+    # Fix indents
     cleaned_text = cleaned_text.replace('\\n', '\n')
     cleaned_text = cleaned_text.replace('\\\\n', '\n').replace('\\n', '\n')
     cleaned_text = cleaned_text.strip()
+    #lowercase
+    cleaned_text = cleaned_text.lower()
     return cleaned_text
 
 

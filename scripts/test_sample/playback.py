@@ -14,11 +14,13 @@ async def run_dataset():
 
     import datetime
 
-    for model in ['gemini/gemini-1.5-pro']:
+    for model in ['xai/grok-3-latest','gemini/gemini-1.5-pro']:
         results = await asyncio.gather(generate_post(EXAMPLE_1,
-                                                     model=model),
+                                                     model=model,
+                                                     temperature=1),
                                        generate_post(EXAMPLE_2,
-                                                     model=model))
+                                                     model=model,
+                                                     temperature=1))
 
         print(f"\n\n\nMODEL: {model}")
         print(f"{datetime.datetime.now()}")
