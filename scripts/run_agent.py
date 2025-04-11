@@ -53,8 +53,8 @@ async def main():
         formatted_posts = []
         for post in past_posts:
             formatted_timeago = timeago.format(post['created_at'], dt.datetime.now(pytz.UTC))
-            formatted_posts.append(f"{formatted_timeago}: \n{post['content']}")
-        posts_history = "--------\n\n".join(formatted_posts)
+            formatted_posts.append(f"<post>\n{formatted_timeago}: \n{post['content']}\n</post>")
+        posts_history = "\n".join(formatted_posts)
 
         # RSS feed context
         already_used_urls = [post['source_url'] for post in past_posts]
@@ -82,15 +82,14 @@ async def main():
         post_content, trace_url = await generate_post(context=meme_context,
                                                       model='gemini/gemini-1.5-pro')
 
-        channels = os.environ['SOCIAL_CHANNELS']
-        channels = [channel.strip() for channel in channels.split(',')]
+        channels = [channel.strip() for channel in os.environ['SOCIAL_CHANNELS'].split(',')]
 
         platform_responses = []
 
         if 'x' in channels:
             logger.log("Posting to X...")
             try:
-                twitter_obj = await send_tweet(twitter_official_client, post_content+f"\n\n{latest_news_article_url}")
+                twitter_obj = await send_tweet(twitter_official_client, post_content)
                 twitter_obj = twitter_obj.data
                 platform_responses.append({
                     'platform': 'twitter',
@@ -102,7 +101,6 @@ async def main():
 
         if 'farcaster' in channels:
             logger.log("Posting to Farcaster...")
-
             warpcast_obj = await send_cast(warpcast_client, post_content)
             parent_r = Parent(
                 fid=int(os.environ['FID']),
