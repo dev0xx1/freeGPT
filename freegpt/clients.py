@@ -37,3 +37,4 @@ if 'FARCASTER_MNEMONIC' in os.environ:
     warpcast_client.get_healthcheck()
 else:
     warpcast_client = None
+

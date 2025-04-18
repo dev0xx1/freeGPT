@@ -7,8 +7,6 @@ from scripts.test_sample.dataset import EXAMPLE_2, EXAMPLE_1
 async def run_dataset():
     """
     """
-    # TODO Add 1 liner examples
-    # TODO Add url embed
 
     print("STARTING MEME GENERATION")
 

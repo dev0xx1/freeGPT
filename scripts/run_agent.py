@@ -15,6 +15,7 @@ from freegpt.helpers import fetch_rss_feed, send_telegram_message, send_tweet, s
 from freegpt.logger import Logger
 
 
+
 async def main():
 
     logger = Logger(__name__)
